@@ -1,0 +1,21 @@
+{
+    "project_id": "fe8740c67781af10",
+    "status": "done",
+    "created_at": "2026-02-20T22:03:52+00:00",
+    "music": "ambiante.mp3",
+    "media": [
+        {
+            "type": "image",
+            "file": "30b2a257578645ee958696514d87c134.jpg",
+            "duration": 3,
+            "original_name": "img2.jpg"
+        },
+        {
+            "type": "video",
+            "file": "de8e7a53df7107b045296912221f2a85.mp4",
+            "original_name": "clip1.mp4"
+        }
+    ],
+    "updated_at": "2026-02-20T22:04:15+00:00",
+    "url": "/outputs/fe8740c67781af10.mp4"
+}

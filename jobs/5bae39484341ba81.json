@@ -1,0 +1,27 @@
+{
+    "project_id": "5bae39484341ba81",
+    "status": "done",
+    "created_at": "2026-02-20T19:06:34+00:00",
+    "music": "",
+    "media": [
+        {
+            "type": "image",
+            "file": "7d26d09360a7361bfc170637cf31070a.jpeg",
+            "duration": 3,
+            "original_name": "FLUTTER.jpeg"
+        },
+        {
+            "type": "image",
+            "file": "516b64e8e7482039db243e5d041cf4d6.png",
+            "duration": 3,
+            "original_name": "M.png"
+        },
+        {
+            "type": "video",
+            "file": "0a4bc29f3ae75506251b36efd711681a.mp4",
+            "original_name": "clip1.mp4"
+        }
+    ],
+    "updated_at": "2026-02-20T19:07:17+00:00",
+    "url": "/outputs/5bae39484341ba81.mp4"
+}

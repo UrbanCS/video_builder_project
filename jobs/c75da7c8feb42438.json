@@ -1,0 +1,16 @@
+{
+    "project_id": "c75da7c8feb42438",
+    "status": "done",
+    "created_at": "2026-02-20T22:06:07+00:00",
+    "music": "guitare.mp3",
+    "media": [
+        {
+            "type": "image",
+            "file": "f192ac3f54a7d3cd2da62dccc44a711e.jpg",
+            "duration": 10,
+            "original_name": "img2.jpg"
+        }
+    ],
+    "updated_at": "2026-02-20T22:06:18+00:00",
+    "url": "/outputs/c75da7c8feb42438.mp4"
+}

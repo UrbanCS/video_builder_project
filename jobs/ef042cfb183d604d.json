@@ -1,0 +1,27 @@
+{
+    "project_id": "ef042cfb183d604d",
+    "status": "done",
+    "created_at": "2026-02-20T22:42:26+00:00",
+    "music": "piano.mp3",
+    "media": [
+        {
+            "type": "image",
+            "file": "843426a6bbebeb6dfe91a059117d9e5c.jpg",
+            "duration": 3,
+            "original_name": "img2.jpg"
+        },
+        {
+            "type": "image",
+            "file": "eb304becef0409a38edf685ccbf4db95.jpg",
+            "duration": 3,
+            "original_name": "rack-with-clean-clothes-on-hangers-after-dry-clean-2026-01-29-19-27-14-utc.jpg"
+        },
+        {
+            "type": "video",
+            "file": "b105b7a40f02419a4e7018171a985941.mp4",
+            "original_name": "clip1.mp4"
+        }
+    ],
+    "updated_at": "2026-02-20T22:42:50+00:00",
+    "url": "/outputs/ef042cfb183d604d.mp4"
+}
