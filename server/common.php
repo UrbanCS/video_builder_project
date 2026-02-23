@@ -1,17 +1,19 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/config.php';
+
 const ROOT_DIR = __DIR__ . '/..';
 const UPLOADS_DIR = ROOT_DIR . '/uploads';
 const OUTPUTS_DIR = ROOT_DIR . '/outputs';
 const JOBS_DIR = ROOT_DIR . '/jobs';
 const MUSIC_DIR = ROOT_DIR . '/music';
 
-const MAX_FILES = 20;
-const MAX_TOTAL_DURATION = 120;
+const MAX_FILES = 40;
+const MAX_TOTAL_DURATION = 600;
 const DEFAULT_IMAGE_DURATION = 3;
 const MAX_IMAGE_DURATION = 10;
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024;   // 10MB
+const MAX_IMAGE_SIZE = 30 * 1024 * 1024;   // 30MB
 const MAX_VIDEO_SIZE = 150 * 1024 * 1024;  // 150MB
 
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'mp4'];
@@ -48,6 +50,15 @@ function sanitizeMusicFilename(string $filename): string
         return '';
     }
     return $base;
+}
+
+function sanitizeMusicMode(string $mode): string
+{
+    $normalized = strtolower(trim($mode));
+    if (in_array($normalized, ['loop', 'stop'], true)) {
+        return $normalized;
+    }
+    return 'loop';
 }
 
 function normalizeUploadedFiles(string $field): array
@@ -195,6 +206,38 @@ function runCommand(array $args): array
         'output' => implode("\n", $output),
         'exit_code' => $exitCode,
     ];
+}
+
+function iniSizeToBytes(string $value): int
+{
+    $value = trim($value);
+    if ($value === '') {
+        return 0;
+    }
+
+    $unit = strtolower(substr($value, -1));
+    $numberPart = $value;
+    if (in_array($unit, ['k', 'm', 'g'], true)) {
+        $numberPart = substr($value, 0, -1);
+    } else {
+        $unit = '';
+    }
+
+    $number = (float) trim($numberPart);
+    if ($number <= 0) {
+        return 0;
+    }
+
+    $bytes = $number;
+    if ($unit === 'k') {
+        $bytes *= 1024;
+    } elseif ($unit === 'm') {
+        $bytes *= 1024 * 1024;
+    } elseif ($unit === 'g') {
+        $bytes *= 1024 * 1024 * 1024;
+    }
+
+    return (int) round($bytes);
 }
 
 function recursiveDelete(string $path): void

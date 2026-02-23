@@ -177,6 +177,7 @@ function processJob(array $job): array
 
     $finalPath = OUTPUTS_DIR . '/' . $projectId . '.mp4';
     $music = sanitizeMusicFilename((string) ($job['music'] ?? ''));
+    $musicMode = sanitizeMusicMode((string) ($job['music_mode'] ?? 'loop'));
 
     if ($music !== '') {
         $musicPath = MUSIC_DIR . '/' . $music;
@@ -184,20 +185,35 @@ function processJob(array $job): array
             throw new RuntimeException('Selected music not found: ' . $music);
         }
 
-        runFfmpeg([
-            FFMPEG_BIN,
-            '-y',
-            '-i', $mergedPath,
-            '-stream_loop', '-1',
-            '-i', $musicPath,
-            '-map', '0:v:0',
-            '-map', '1:a:0',
-            '-threads', '1',
-            '-c:v', 'copy',
-            '-c:a', 'aac',
-            '-shortest',
-            $finalPath,
-        ]);
+        if ($musicMode === 'stop') {
+            runFfmpeg([
+                FFMPEG_BIN,
+                '-y',
+                '-i', $mergedPath,
+                '-i', $musicPath,
+                '-map', '0:v:0',
+                '-map', '1:a:0',
+                '-threads', '1',
+                '-c:v', 'copy',
+                '-c:a', 'aac',
+                $finalPath,
+            ]);
+        } else {
+            runFfmpeg([
+                FFMPEG_BIN,
+                '-y',
+                '-i', $mergedPath,
+                '-stream_loop', '-1',
+                '-i', $musicPath,
+                '-map', '0:v:0',
+                '-map', '1:a:0',
+                '-threads', '1',
+                '-c:v', 'copy',
+                '-c:a', 'aac',
+                '-shortest',
+                $finalPath,
+            ]);
+        }
     } else {
         if (!rename($mergedPath, $finalPath)) {
             throw new RuntimeException('Unable to move final video to outputs');
@@ -208,7 +224,7 @@ function processJob(array $job): array
 
     $job['status'] = 'done';
     $job['updated_at'] = gmdate('c');
-    $job['url'] = '/outputs/' . $projectId . '.mp4';
+    $job['url'] = BASE_URL . 'outputs/' . $projectId . '.mp4';
     writeJob($job);
 
     $projectJobPath = $projectDir . '/job.json';

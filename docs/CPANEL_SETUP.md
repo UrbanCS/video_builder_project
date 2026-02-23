@@ -70,4 +70,4 @@ file '/home/USER/video_builder_project/uploads/abc123abc123abcd/work/part_001.mp
 - Paramètres shell protégés par `escapeshellarg()`
 - Traitement FFmpeg uniquement via worker cron
 - Dossiers `jobs/` et `uploads/` protégés par `.htaccess`
-- Durée totale max: `120` secondes (contrôlée côté worker)
+- Durée totale max: `600` secondes (contrôlée côté worker)

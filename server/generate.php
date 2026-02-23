@@ -8,6 +8,19 @@ try {
         jsonResponse(['error' => 'Method not allowed'], 405);
     }
 
+    $contentLength = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
+    $postMaxBytes = iniSizeToBytes((string) ini_get('post_max_size'));
+    if ($postMaxBytes > 0 && $contentLength > $postMaxBytes) {
+        jsonResponse([
+            'error' => 'Upload too large for server limit (post_max_size).',
+            'details' => [
+                'content_length' => $contentLength,
+                'post_max_size' => (string) ini_get('post_max_size'),
+                'post_max_bytes' => $postMaxBytes,
+            ],
+        ], 413);
+    }
+
     ensureDir(UPLOADS_DIR);
     ensureDir(JOBS_DIR);
 
@@ -32,6 +45,7 @@ try {
     }
 
     $music = sanitizeMusicFilename((string) ($_POST['music'] ?? ''));
+    $musicMode = sanitizeMusicMode((string) ($_POST['music_mode'] ?? 'loop'));
     if ($music !== '') {
         $musicPath = realpath(MUSIC_DIR . '/' . $music);
         $musicRoot = realpath(MUSIC_DIR);
@@ -111,6 +125,7 @@ try {
         'status' => 'pending',
         'created_at' => gmdate('c'),
         'music' => $music,
+        'music_mode' => $musicMode,
         'media' => $media,
     ];
 

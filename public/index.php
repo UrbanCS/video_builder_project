@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/../server/common.php';
 $musicFiles = listMusicFiles();
+$postMaxBytes = iniSizeToBytes((string) ini_get('post_max_size'));
+$maxTotalUploadBytes = $postMaxBytes > 0 ? (int) floor($postMaxBytes * 0.9) : (38 * 1024 * 1024);
 ?>
 <!doctype html>
 <html lang="fr">
@@ -139,7 +141,7 @@ $musicFiles = listMusicFiles();
   <main class="container">
     <section class="panel">
       <h1>Générateur de vidéo MP4</h1>
-      <p class="muted">Formats autorisés: JPG, PNG, MP4. Max 20 fichiers. Durée totale max: 120 sec.</p>
+      <p class="muted">Formats autorisés: JPG, PNG, MP4. Max 40 fichiers. Image max: 30 MB. Vidéo max: 150 MB. Durée totale max: 600 sec.</p>
 
       <div class="dropzone" id="dropzone">
         <label for="mediaInput">Ajouter images/vidéos</label>
@@ -162,6 +164,15 @@ $musicFiles = listMusicFiles();
           </select>
         </div>
       </div>
+      <div class="grid" style="margin-top: 0;">
+        <div>
+          <label for="musicMode">Comportement de la musique</label>
+          <select id="musicMode">
+            <option value="loop">Boucler jusqu'à la fin de la vidéo</option>
+            <option value="stop">Arrêter la musique à la fin de la piste</option>
+          </select>
+        </div>
+      </div>
 
       <p class="muted">Réordonne les médias par glisser-déposer avant génération.</p>
       <ul id="previewList" class="preview-list"></ul>
@@ -177,8 +188,14 @@ $musicFiles = listMusicFiles();
   </main>
 
 <script>
+  const BASE_URL = "<?= BASE_URL ?>";
+</script>
+<script>
 (() => {
-  const MAX_FILES = 20;
+  const MAX_FILES = 40;
+  const MAX_IMAGE_SIZE = 30 * 1024 * 1024;
+  const MAX_VIDEO_SIZE = 150 * 1024 * 1024;
+  const MAX_TOTAL_UPLOAD_SIZE = <?= $maxTotalUploadBytes ?>;
   const allowedExt = new Set(['jpg', 'jpeg', 'png', 'mp4']);
   const mediaInput = document.getElementById('mediaInput');
   const dropzone = document.getElementById('dropzone');
@@ -186,6 +203,7 @@ $musicFiles = listMusicFiles();
   const generateBtn = document.getElementById('generateBtn');
   const imageDurationInput = document.getElementById('imageDuration');
   const musicSelect = document.getElementById('musicSelect');
+  const musicMode = document.getElementById('musicMode');
   const statusBox = document.getElementById('statusBox');
   const resultBox = document.getElementById('resultBox');
   const countInfo = document.getElementById('countInfo');
@@ -219,6 +237,10 @@ $musicFiles = listMusicFiles();
     countInfo.textContent = `${mediaState.length} fichier${mediaState.length > 1 ? 's' : ''}`;
   }
 
+  function totalUploadSize(files) {
+    return files.reduce((sum, item) => sum + item.file.size, 0);
+  }
+
   function removeItem(id) {
     const idx = mediaState.findIndex(item => item.id === id);
     if (idx >= 0) {
@@ -249,6 +271,20 @@ $musicFiles = listMusicFiles();
       }
 
       const type = extension === 'mp4' ? 'video' : 'image';
+      const maxSize = type === 'image' ? MAX_IMAGE_SIZE : MAX_VIDEO_SIZE;
+      const maxSizeMb = Math.round(maxSize / (1024 * 1024));
+      if (file.size > maxSize) {
+        setStatus(`Fichier trop volumineux (${maxSizeMb} MB max): ${file.name}`, true);
+        continue;
+      }
+
+      const projectedTotal = totalUploadSize(mediaState) + file.size;
+      if (projectedTotal > MAX_TOTAL_UPLOAD_SIZE) {
+        const maxTotalMb = Math.round(MAX_TOTAL_UPLOAD_SIZE / (1024 * 1024));
+        setStatus(`Taille totale trop élevée (${maxTotalMb} MB max par envoi): ${file.name}`, true);
+        continue;
+      }
+
       mediaState.push({
         id: uid(),
         file,
@@ -307,13 +343,19 @@ $musicFiles = listMusicFiles();
         throw new Error('Erreur status endpoint');
       }
 
-      const data = await res.json();
+      const raw = await res.text();
+      let data = null;
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        throw new Error(`Réponse status non-JSON: ${raw.slice(0, 180)}`);
+      }
       const status = data.status || 'unknown';
       setStatus(`Job ${jobId}: ${status}`);
 
       if (status === 'done') {
         resultBox.hidden = false;
-        const url = data.url || `/outputs/${jobId}.mp4`;
+        const url = data.url || `${BASE_URL}outputs/${jobId}.mp4`;
         resultBox.innerHTML = `Vidéo prête: <a href="${url}" target="_blank" rel="noopener">${url}</a>`;
         return;
       }
@@ -342,6 +384,12 @@ $musicFiles = listMusicFiles();
       return;
     }
 
+    if (totalUploadSize(mediaState) > MAX_TOTAL_UPLOAD_SIZE) {
+      const maxTotalMb = Math.round(MAX_TOTAL_UPLOAD_SIZE / (1024 * 1024));
+      setStatus(`Taille totale trop élevée (${maxTotalMb} MB max par envoi).`, true);
+      return;
+    }
+
     generateBtn.disabled = true;
     setStatus('Upload en cours...');
 
@@ -357,13 +405,20 @@ $musicFiles = listMusicFiles();
       formData.append('order_json', JSON.stringify(order));
       formData.append('image_duration', String(imageDuration));
       formData.append('music', musicSelect.value);
+      formData.append('music_mode', musicMode.value);
 
       const resp = await fetch(GENERATE_ENDPOINT, {
         method: 'POST',
         body: formData
       });
 
-      const payload = await resp.json();
+      const raw = await resp.text();
+      let payload = null;
+      try {
+        payload = JSON.parse(raw);
+      } catch (e) {
+        throw new Error(`Réponse generate non-JSON: ${raw.slice(0, 180)}`);
+      }
       if (!resp.ok || !payload.job_id) {
         throw new Error(payload.error || 'Erreur lors de la création du job');
       }

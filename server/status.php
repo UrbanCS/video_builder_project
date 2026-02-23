@@ -13,11 +13,14 @@ try {
     $status = (string) ($job['status'] ?? 'unknown');
 
     if ($status === 'done') {
-        $url = '/outputs/' . $jobId . '.mp4';
+        $url = BASE_URL . 'outputs/' . $jobId . '.mp4';
         if (!is_file(OUTPUTS_DIR . '/' . $jobId . '.mp4')) {
             jsonResponse(['status' => 'done', 'warning' => 'Output file missing']);
         }
-        jsonResponse(['status' => 'done', 'url' => $url]);
+        jsonResponse([
+            'status' => 'done',
+            'url' => $url,
+        ]);
     }
 
     if ($status === 'failed') {
