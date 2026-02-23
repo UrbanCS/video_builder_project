@@ -6,6 +6,7 @@ jobs/.process.lock
 
 # Keep empty folders
 !uploads/.gitkeep
+!uploads/.htaccess
 !outputs/.gitkeep
 !jobs/.gitkeep
 
