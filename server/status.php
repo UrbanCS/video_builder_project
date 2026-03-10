@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+die('STATUS FILE TEST');
+
 require __DIR__ . '/common.php';
 
 try {
@@ -20,6 +22,12 @@ try {
         jsonResponse([
             'status' => 'done',
             'url' => $url,
+<<<<<<< HEAD
+=======
+            'debug_base_url' => BASE_URL,
+            'debug_config_file' => realpath(__DIR__ . '/config.php'),
+            'debug_script' => $_SERVER['SCRIPT_FILENAME'] ?? '',
+>>>>>>> a11a78e (Add video builder rendering and admin history improvements)
         ]);
     }
 
