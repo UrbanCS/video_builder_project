@@ -435,7 +435,11 @@ function listJobsForUser(?array $user, int $limit = 30): array
 
         $status = (string) ($job['status'] ?? 'unknown');
         $url = '';
-        if ($status === 'done' && is_file(OUTPUTS_DIR . '/' . $projectId . '.mp4')) {
+        if ($status === 'done') {
+            $outputPath = OUTPUTS_DIR . '/' . $projectId . '.mp4';
+            if (!is_file($outputPath)) {
+                continue;
+            }
             $url = BASE_URL . 'outputs/' . $projectId . '.mp4';
         }
 
