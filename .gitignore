@@ -3,12 +3,14 @@ uploads/**
 outputs/**
 jobs/*.json
 jobs/.process.lock
+data/users.json
 
 # Keep empty folders
 !uploads/.gitkeep
 !uploads/.htaccess
 !outputs/.gitkeep
 !jobs/.gitkeep
+!data/.gitkeep
 
 # Local/private config
 server/config.php

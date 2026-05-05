@@ -6,12 +6,23 @@ die('STATUS FILE TEST');
 require __DIR__ . '/common.php';
 
 try {
+    ensureSession();
+    $currentUser = currentUser();
+    if ($currentUser === null) {
+        jsonResponse(['error' => 'Authentication required'], 401);
+    }
+
     $jobId = (string) ($_GET['job_id'] ?? '');
     if (!safeJobId($jobId)) {
         jsonResponse(['error' => 'Invalid job_id'], 400);
     }
 
     $job = readJob($jobId);
+    $jobUserId = (string) ($job['user_id'] ?? '');
+    $currentUserId = (string) ($currentUser['id'] ?? '');
+    if (($jobUserId === '' && !isOwner($currentUser)) || ($jobUserId !== '' && $jobUserId !== $currentUserId && !isOwner($currentUser))) {
+        jsonResponse(['error' => 'Forbidden'], 403);
+    }
     $status = (string) ($job['status'] ?? 'unknown');
 
     if ($status === 'done') {
