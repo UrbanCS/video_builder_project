@@ -516,6 +516,15 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
             <option value="crossfade">Fondu croisé</option>
             <option value="slide">Glissement</option>
           </select>
+          <div style="margin-top: 14px;">
+            <label for="titleAnimationSelect">Animation pages titre</label>
+            <select id="titleAnimationSelect">
+              <option value="fade">Fondu</option>
+              <option value="slide_up">Montée douce</option>
+              <option value="zoom_in">Zoom léger</option>
+              <option value="none">Aucune</option>
+            </select>
+          </div>
         </div>
         <div>
           <label for="mediaAnimationSelect">Animation images</label>
@@ -529,23 +538,6 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
             <option value="random">Aléatoire</option>
           </select>
           <p class="muted">Les vidéos utilisent maintenant un fond flou automatique. Les arrière-plans fixes ont été retirés pour garder le rendu stable.</p>
-        </div>
-      </div>
-      <div class="grid" style="margin-top: 0;">
-        <div>
-          <label>Arrière-plan présentation</label>
-          <div class="status" style="margin-top:0;">
-            Flou automatique basé sur les médias importés.
-          </div>
-        </div>
-        <div>
-          <label for="titleAnimationSelect">Animation pages titre</label>
-          <select id="titleAnimationSelect">
-            <option value="fade">Fondu</option>
-            <option value="slide_up">Montée douce</option>
-            <option value="zoom_in">Zoom léger</option>
-            <option value="none">Aucune</option>
-          </select>
         </div>
       </div>
       <?php if ($isOwnerUser): ?>
