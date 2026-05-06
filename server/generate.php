@@ -64,6 +64,7 @@ try {
         }
     }
 
+    $homageFrom = sanitizeTitleText((string) ($_POST['homage_from'] ?? ''), 120);
     $clientFirstName = sanitizeTitleText((string) ($_POST['client_first_name'] ?? ''), 80);
     $clientLastName = sanitizeTitleText((string) ($_POST['client_last_name'] ?? ''), 80);
     $tributeName = sanitizeTitleText((string) ($_POST['tribute_name'] ?? ''), 120);
@@ -100,6 +101,7 @@ try {
 
     if (!isOwner($currentUser)) {
         $profile = currentUserProfile($currentUser);
+        $homageFrom = resolveHomageFrom($profile);
         $clientFirstName = sanitizeTitleText((string) ($profile['client_first_name'] ?? ''), 80);
         $clientLastName = sanitizeTitleText((string) ($profile['client_last_name'] ?? ''), 80);
         $tributeName = sanitizeTitleText((string) ($profile['tribute_name'] ?? ''), 120);
@@ -194,6 +196,7 @@ try {
         'title_duration' => $titleDuration,
         'intro_title' => $introTitle,
         'outro_title' => $outroTitle,
+        'homage_from' => $homageFrom,
         'client_first_name' => $clientFirstName,
         'client_last_name' => $clientLastName,
         'tribute_name' => $tributeName,

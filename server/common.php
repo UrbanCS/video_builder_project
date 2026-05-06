@@ -196,6 +196,18 @@ function currentUserProfile(?array $user): array
     return is_array($profile) ? $profile : [];
 }
 
+function resolveHomageFrom(array $source): string
+{
+    $explicit = sanitizeTitleText((string) ($source['homage_from'] ?? ''), 120);
+    if ($explicit !== '') {
+        return $explicit;
+    }
+
+    $first = sanitizeTitleText((string) ($source['client_first_name'] ?? ''), 80);
+    $last = sanitizeTitleText((string) ($source['client_last_name'] ?? ''), 80);
+    return trim($first . ' ' . $last);
+}
+
 function sanitizeTitleText(string $text, int $maxLen = 120): string
 {
     $trimmed = trim($text);
@@ -708,6 +720,7 @@ function createUser(string $email, string $password, string $role, string $creat
         'created_at' => gmdate('c'),
         'created_by' => $createdById,
         'profile' => [
+            'homage_from' => sanitizeTitleText((string) ($profile['homage_from'] ?? ''), 120),
             'client_first_name' => sanitizeTitleText((string) ($profile['client_first_name'] ?? ''), 80),
             'client_last_name' => sanitizeTitleText((string) ($profile['client_last_name'] ?? ''), 80),
             'tribute_name' => sanitizeTitleText((string) ($profile['tribute_name'] ?? ''), 120),

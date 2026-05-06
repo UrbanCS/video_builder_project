@@ -58,6 +58,7 @@ try {
         $passwordInput = trim((string) ($_POST['password'] ?? ''));
         $password = $passwordInput !== '' ? $passwordInput : bin2hex(random_bytes(8));
         $profile = [
+            'homage_from' => (string) ($_POST['homage_from'] ?? ''),
             'client_first_name' => (string) ($_POST['client_first_name'] ?? ''),
             'client_last_name' => (string) ($_POST['client_last_name'] ?? ''),
             'tribute_name' => (string) ($_POST['tribute_name'] ?? ''),

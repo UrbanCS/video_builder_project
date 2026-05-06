@@ -565,17 +565,17 @@ function processJob(array $job): array
     if ($titleDuration < 2 || $titleDuration > 10) {
         $titleDuration = 4;
     }
+    $homageFrom = resolveHomageFrom($job);
     $clientFirstName = sanitizeTitleText((string) ($job['client_first_name'] ?? ''), 80);
     $clientLastName = sanitizeTitleText((string) ($job['client_last_name'] ?? ''), 80);
     $tributeName = sanitizeTitleText((string) ($job['tribute_name'] ?? ''), 120);
     $introTitle = sanitizeTitleText((string) ($job['intro_title'] ?? ''), 120);
     $outroTitle = sanitizeTitleText((string) ($job['outro_title'] ?? ''), 120);
-    $clientFullName = trim($clientFirstName . ' ' . $clientLastName);
 
     if ($introTitle === '' && $tributeName !== '') {
         $introTitle = 'Hommage a ' . $tributeName;
     }
-    $introSubtitle = $clientFullName !== '' ? 'Famille ' . $clientFullName : '';
+    $introSubtitle = $homageFrom !== '' ? 'Hommage de la part de ' . $homageFrom : '';
 
     $totalDuration = 0.0;
     $parts = [];

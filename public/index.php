@@ -418,13 +418,10 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
           </div>
           <div class="grid" style="margin-top:0;">
             <div>
-              <label for="newClientFirstName">Prénom client</label>
-              <input id="newClientFirstName" name="client_first_name" type="text" maxlength="80" placeholder="Ex: Marie">
+              <label for="newClientHomageFrom">Hommage de la part de</label>
+              <input id="newClientHomageFrom" name="homage_from" type="text" maxlength="120" placeholder="Ex: Famille Dupont">
             </div>
-            <div>
-              <label for="newClientLastName">Nom client</label>
-              <input id="newClientLastName" name="client_last_name" type="text" maxlength="80" placeholder="Ex: Dupont">
-            </div>
+            <div></div>
           </div>
           <div style="margin-top:0;">
             <label for="newClientTributeName">Nom de la personne honorée (verrouillé pour ce client)</label>
@@ -552,13 +549,10 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
       <?php endif; ?>
       <div class="grid" style="margin-top: 0;">
         <div>
-          <label for="clientFirstName">Prénom client</label>
-          <input id="clientFirstName" type="text" maxlength="80" placeholder="Ex: Marie" value="<?= htmlspecialchars((string) ($currentUserProfile['client_first_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $isOwnerUser ? '' : 'readonly' ?>>
+          <label for="homageFrom">Hommage de la part de</label>
+          <input id="homageFrom" type="text" maxlength="120" placeholder="Ex: Famille Dupont" value="<?= htmlspecialchars(resolveHomageFrom($currentUserProfile), ENT_QUOTES, 'UTF-8') ?>" <?= $isOwnerUser ? '' : 'readonly' ?>>
         </div>
-        <div>
-          <label for="clientLastName">Nom client</label>
-          <input id="clientLastName" type="text" maxlength="80" placeholder="Ex: Dupont" value="<?= htmlspecialchars((string) ($currentUserProfile['client_last_name'] ?? ''), ENT_QUOTES, 'UTF-8') ?>" <?= $isOwnerUser ? '' : 'readonly' ?>>
-        </div>
+        <div></div>
       </div>
       <div class="grid" style="margin-top: 0;">
         <div>
@@ -622,8 +616,7 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
   const mediaAnimationSelect = document.getElementById('mediaAnimationSelect');
   const titleAnimationSelect = document.getElementById('titleAnimationSelect');
   const logoInput = document.getElementById('logoInput');
-  const clientFirstNameInput = document.getElementById('clientFirstName');
-  const clientLastNameInput = document.getElementById('clientLastName');
+  const homageFromInput = document.getElementById('homageFrom');
   const tributeNameInput = document.getElementById('tributeName');
   const titleDurationInput = document.getElementById('titleDuration');
   const introTitleInput = document.getElementById('introTitle');
@@ -824,8 +817,7 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
       title_duration: titleDurationInput ? titleDurationInput.value : '',
       intro_title: introTitleInput ? introTitleInput.value : '',
       outro_title: outroTitleInput ? outroTitleInput.value : '',
-      client_first_name: clientFirstNameInput ? clientFirstNameInput.value : '',
-      client_last_name: clientLastNameInput ? clientLastNameInput.value : '',
+      homage_from: homageFromInput ? homageFromInput.value : '',
       tribute_name: tributeNameInput ? tributeNameInput.value : ''
     };
     try {
@@ -894,11 +886,8 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
     }
 
     if (IS_OWNER) {
-      if (clientFirstNameInput && payload.client_first_name !== undefined) {
-        clientFirstNameInput.value = String(payload.client_first_name || '');
-      }
-      if (clientLastNameInput && payload.client_last_name !== undefined) {
-        clientLastNameInput.value = String(payload.client_last_name || '');
+      if (homageFromInput && payload.homage_from !== undefined) {
+        homageFromInput.value = String(payload.homage_from || '');
       }
       if (tributeNameInput && payload.tribute_name !== undefined) {
         tributeNameInput.value = String(payload.tribute_name || '');
@@ -1174,8 +1163,7 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
       formData.append('media_animation', mediaAnimationSelect.value);
       formData.append('background', '');
       formData.append('title_animation', titleAnimationSelect.value);
-      formData.append('client_first_name', clientFirstNameInput.value || '');
-      formData.append('client_last_name', clientLastNameInput.value || '');
+      formData.append('homage_from', homageFromInput.value || '');
       formData.append('tribute_name', tributeNameInput.value || '');
       formData.append('intro_title', introTitleInput.value || '');
       formData.append('outro_title', outroTitleInput.value || '');
@@ -1236,8 +1224,7 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
     titleDurationInput,
     introTitleInput,
     outroTitleInput,
-    clientFirstNameInput,
-    clientLastNameInput,
+    homageFromInput,
     tributeNameInput,
   ];
   draftInputs.forEach((el) => {
