@@ -1,8 +1,6 @@
 <?php
 declare(strict_types=1);
 
-die('STATUS FILE TEST');
-
 require __DIR__ . '/common.php';
 
 try {
@@ -18,11 +16,10 @@ try {
     }
 
     $job = readJob($jobId);
-    $jobUserId = (string) ($job['user_id'] ?? '');
-    $currentUserId = (string) ($currentUser['id'] ?? '');
-    if (($jobUserId === '' && !isOwner($currentUser)) || ($jobUserId !== '' && $jobUserId !== $currentUserId && !isOwner($currentUser))) {
+    if (!canUserAccessJob($currentUser, $job)) {
         jsonResponse(['error' => 'Forbidden'], 403);
     }
+
     $status = (string) ($job['status'] ?? 'unknown');
 
     if ($status === 'done') {
@@ -33,12 +30,6 @@ try {
         jsonResponse([
             'status' => 'done',
             'url' => $url,
-<<<<<<< HEAD
-=======
-            'debug_base_url' => BASE_URL,
-            'debug_config_file' => realpath(__DIR__ . '/config.php'),
-            'debug_script' => $_SERVER['SCRIPT_FILENAME'] ?? '',
->>>>>>> a11a78e (Add video builder rendering and admin history improvements)
         ]);
     }
 

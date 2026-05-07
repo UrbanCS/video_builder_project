@@ -421,8 +421,6 @@ function listJobsForUser(?array $user, int $limit = 30): array
 
     ensureDir(JOBS_DIR);
     $jobFiles = glob(JOBS_DIR . '/*.json') ?: [];
-    $currentUserId = (string) ($user['id'] ?? '');
-    $owner = isOwner($user);
     $jobs = [];
 
     foreach ($jobFiles as $path) {
@@ -435,8 +433,7 @@ function listJobsForUser(?array $user, int $limit = 30): array
             continue;
         }
 
-        $jobUserId = (string) ($job['user_id'] ?? '');
-        if (!$owner && ($jobUserId === '' || $jobUserId !== $currentUserId)) {
+        if (!canUserAccessJob($user, $job)) {
             continue;
         }
 
@@ -478,6 +475,85 @@ function listJobsForUser(?array $user, int $limit = 30): array
     }
 
     return $jobs;
+}
+
+function ownerVisibleUserIds(?array $user): array
+{
+    if (!isOwner($user)) {
+        return [];
+    }
+
+    $ownerId = (string) ($user['id'] ?? '');
+    if ($ownerId === '') {
+        return [];
+    }
+
+    $visibleIds = [$ownerId];
+    $users = readUsers();
+    foreach ($users as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        if ((string) ($row['created_by'] ?? '') !== $ownerId) {
+            continue;
+        }
+
+        $childId = (string) ($row['id'] ?? '');
+        if ($childId !== '') {
+            $visibleIds[] = $childId;
+        }
+    }
+
+    return array_values(array_unique($visibleIds));
+}
+
+function ownerVisibleEmails(?array $user): array
+{
+    if (!isOwner($user)) {
+        return [];
+    }
+
+    $visibleEmails = [];
+    foreach (ownerVisibleUserIds($user) as $visibleId) {
+        $visibleUser = findUserById($visibleId);
+        if (!is_array($visibleUser)) {
+            continue;
+        }
+
+        $email = normalizeEmail((string) ($visibleUser['email'] ?? ''));
+        if ($email !== '') {
+            $visibleEmails[] = $email;
+        }
+    }
+
+    return array_values(array_unique($visibleEmails));
+}
+
+function canUserAccessJob(?array $user, array $job): bool
+{
+    if (!is_array($user)) {
+        return false;
+    }
+
+    $jobUserId = (string) ($job['user_id'] ?? '');
+    $jobUserEmail = normalizeEmail((string) ($job['user_email'] ?? ''));
+    $currentUserId = (string) ($user['id'] ?? '');
+
+    if (isOwner($user)) {
+        $visibleIds = ownerVisibleUserIds($user);
+        if ($jobUserId !== '' && in_array($jobUserId, $visibleIds, true)) {
+            return true;
+        }
+
+        if ($jobUserId === '') {
+            $visibleEmails = ownerVisibleEmails($user);
+            return $jobUserEmail !== '' && in_array($jobUserEmail, $visibleEmails, true);
+        }
+
+        return false;
+    }
+
+    return $jobUserId !== '' && $jobUserId === $currentUserId;
 }
 
 function listMusicFiles(): array
