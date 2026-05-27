@@ -1,0 +1,17 @@
+# Runtime / generated
+uploads/**
+outputs/**
+jobs/*.json
+jobs/.process.lock
+
+# Keep empty folders
+!uploads/.gitkeep
+!uploads/.htaccess
+!outputs/.gitkeep
+!jobs/.gitkeep
+
+# Local/private config
+server/config.php
+
+# Optional local editor
+.vscode/
