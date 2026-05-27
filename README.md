@@ -1,14 +1,14 @@
-# 🎬 Video Builder (PHP + FFmpeg)
+# Maison Funéraire McConnery Video Builder
 
-A lightweight PHP-based web application that generates MP4 videos from uploaded images and videos, with optional background music.
+Maison Funéraire McConnery Video Builder is a production-ready PHP web application that creates memorial tribute videos in MP4 format from uploaded photos, video clips, and optional background music.
 
-Designed for deployment on shared cPanel hosting environments with FFmpeg installed.
+Built for shared hosting environments with FFmpeg installed, the application uses an asynchronous queue and cron-based rendering pipeline to generate high-quality 1080p videos efficiently and securely.
 
 ---
 
 ## 🚀 Overview
 
-This project allows users to:
+This project allows staff to:
 
 * Upload images (JPG, PNG)
 * Upload videos (MP4)
