@@ -1,19 +1,64 @@
-# Runtime / generated
+# Environment and private configuration
+.env
+.env.*
+!.env.example
+!.env.dist
+server/config.php
+server/config.*.php
+server/config.php.*
+credentials*.json
+secrets*.json
+*.pem
+*.key
+*.p12
+*.pfx
+.htpasswd
+.htpasswds/
+.user.ini
+php.ini
+
+# Runtime and generated content
 uploads/**
 outputs/**
-jobs/*.json
-jobs/.process.lock
-data/users.json
+jobs/**
+data/**
 
-# Keep empty folders
+# Keep only repository placeholders and access protections
 !uploads/.gitkeep
 !uploads/.htaccess
 !outputs/.gitkeep
+!outputs/.htaccess
 !jobs/.gitkeep
+!jobs/.htaccess
 !data/.gitkeep
+!data/.htaccess
 
-# Local/private config
-server/config.php
+# Logs and temporary files
+*.log
+error_log
+php_errorlog
+*.tmp
+*.temp
+*.pid
 
-# Optional local editor
+# Backups, database dumps and archives
+*.bak
+*.backup
+*.old
+*.orig
+*~
+*.sql
+*.sql.gz
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# Hosting, operating system and editor metadata
+.cpanel/
+.trash/
+.DS_Store
+Thumbs.db
 .vscode/
