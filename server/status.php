@@ -4,12 +4,22 @@ declare(strict_types=1);
 require __DIR__ . '/common.php';
 
 try {
+    ensureSession();
+    $currentUser = currentUser();
+    if ($currentUser === null) {
+        jsonResponse(['error' => 'Authentication required'], 401);
+    }
+
     $jobId = (string) ($_GET['job_id'] ?? '');
     if (!safeJobId($jobId)) {
         jsonResponse(['error' => 'Invalid job_id'], 400);
     }
 
     $job = readJob($jobId);
+    if (!canUserAccessJob($currentUser, $job)) {
+        jsonResponse(['error' => 'Forbidden'], 403);
+    }
+
     $status = (string) ($job['status'] ?? 'unknown');
 
     if ($status === 'done') {

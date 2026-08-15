@@ -16,6 +16,7 @@ video_builder_project/
 ├── uploads/
 ├── outputs/
 ├── jobs/
+├── data/
 └── music/
 ```
 
@@ -71,3 +72,17 @@ file '/home/USER/video_builder_project/uploads/abc123abc123abcd/work/part_001.mp
 - Traitement FFmpeg uniquement via worker cron
 - Dossiers `jobs/` et `uploads/` protégés par `.htaccess`
 - Durée totale max: `600` secondes (contrôlée côté worker)
+
+## 7) Authentification (owner/client)
+
+- Le premier accès à `public/index.php` affiche l'initialisation du compte propriétaire (`owner`).
+- Les comptes sont stockés dans `data/users.json`.
+- Le propriétaire connecté peut créer des comptes `client`.
+- Vérifie que le dossier `data/` est accessible en écriture par PHP.
+- Le flux "mot de passe oublié" envoie un email via `mail()`. Configure une adresse valide dans `server/config.php` (`MAIL_FROM`) et active l'envoi mail côté hébergeur.
+
+## 8) Fonds et police des pages titre
+
+- Les pages titre et les médias utilisent maintenant un fond flou automatique basé sur les médias importés.
+- Les arrière-plans fixes ont été retirés pour éviter les plantages de rendu sur l'infrastructure actuelle.
+- Police script des titres configurable dans `server/config.php` via `TITLE_FONT_FAMILY` (ex: `Satisfy`).
