@@ -1,47 +1,47 @@
 # Video Builder McConnery
 
-Application web en français pour créer des vidéos hommage à partir de photos et de clips. Les utilisateurs préparent leur montage dans le navigateur; un worker PHP assemble ensuite la vidéo avec FFmpeg et produit un fichier MP4 téléchargeable.
+A web application with a French-language interface for creating tribute videos from photos and video clips. Users arrange their montage in the browser, then a PHP worker assembles it with FFmpeg and produces a downloadable MP4 file.
 
-Le projet utilise **PHP, JavaScript et FFmpeg**, sans framework, sans base de données SQL et sans étape de compilation. Les comptes et les tâches de rendu sont stockés dans des fichiers JSON privés.
+The project uses **PHP, JavaScript, and FFmpeg**, with no framework, SQL database, or build step. Accounts and rendering jobs are stored in private JSON files.
 
-## Fonctionnalités
+## Features
 
-- Import de photos JPG/PNG et de vidéos MP4, aperçu et réorganisation par glisser-déposer.
-- Durée des photos réglable, transitions et animations de mouvement.
-- Fond flouté automatiquement à partir des médias, avec pages d'ouverture et de fin personnalisées.
-- Champs « Hommage de la part de » et nom de la personne honorée.
-- Musique de fond MP3 et ajout d'un logo en filigrane par le propriétaire.
-- Comptes propriétaires (`owner`) et clients, invitations et réinitialisation de mot de passe par courriel.
-- Historique filtré selon le compte : un client voit ses créations; un propriétaire voit les siennes et celles de ses clients.
-- Sauvegarde du brouillon dans le navigateur via `localStorage` et IndexedDB, selon les capacités et l'espace disponibles.
-- Rendu asynchrone et suivi des états `pending`, `processing`, `done` et `failed`.
+- JPG/PNG photo and MP4 video uploads, previews, and drag-and-drop ordering.
+- Adjustable photo duration, transitions, and motion effects.
+- Automatic blurred backgrounds derived from the uploaded media, with custom opening and closing title cards.
+- Fields identifying who the tribute is from and the person being honored.
+- MP3 background music and an optional logo watermark uploaded by the owner.
+- Owner (`owner`) and client accounts, email invitations, and password resets.
+- Account-based history: clients see their own creations; owners see their own creations and those of their clients.
+- Browser draft storage using `localStorage` and IndexedDB, subject to browser support and available storage.
+- Asynchronous rendering with `pending`, `processing`, `done`, and `failed` status tracking.
 
-Le rendu cible le **1920 × 1080, à 30 images/s, en H.264**. La musique sélectionnée est bouclée sur le montage et encodée en AAC. **L'audio original des clips n'est pas conservé dans le fichier final**; sans musique sélectionnée, le montage est silencieux.
+Output targets **1920 × 1080 at 30 fps, encoded in H.264**. The selected music loops for the duration of the montage and is encoded in AAC. **Original clip audio is not preserved in the final file**; without a selected music track, the montage is silent.
 
-## Prérequis
+## Requirements
 
-- PHP **8.1 minimum** (le code utilise notamment le type de retour `never`), disponible pour le serveur web et en ligne de commande.
-- Sessions, JSON et extension PHP `fileinfo`; GD avec JPEG/PNG pour le redimensionnement des photos. `mbstring` est recommandé pour les textes UTF-8.
-- `ffmpeg` et `ffprobe` accessibles dans le `PATH` du processus qui exécute le worker, y compris celui du cron.
-- FFmpeg avec l'encodeur `libx264`, l'encodeur AAC et les filtres de composition. Les titres utilisent `drawtext` ou, en repli, `subtitles` avec libass.
-- Fonction PHP `exec()` autorisée pour le rendu et accès en écriture aux dossiers `data/`, `jobs/`, `uploads/` et `outputs/`.
-- Navigateur récent. Le glisser-déposer utilise SortableJS 1.15.6, chargé depuis jsDelivr.
-- Pour les invitations et réinitialisations : envoi de courriels PHP `mail()` configuré chez l'hébergeur.
+- PHP **8.1 or later** (the code uses the `never` return type), available both through the web server and on the command line.
+- Sessions, JSON, and the PHP `fileinfo` extension; GD with JPEG/PNG support for photo resizing. `mbstring` is recommended for UTF-8 text.
+- `ffmpeg` and `ffprobe` available in the worker process's `PATH`, including the cron environment.
+- FFmpeg with the `libx264` and AAC encoders and the required compositing filters. Titles use `drawtext`, with `subtitles` and libass as a fallback.
+- PHP `exec()` enabled for rendering, and write access to `data/`, `jobs/`, `uploads/`, and `outputs/`.
+- A recent browser. Drag-and-drop ordering uses SortableJS 1.15.6, loaded from jsDelivr.
+- For invitations and password resets: PHP `mail()` delivery configured with the hosting provider.
 
-Aucune commande `npm install` ou `composer install` n'est nécessaire dans cette version.
+This version does not require `npm install` or `composer install`.
 
-## Démarrage local
+## Local setup
 
-### 1. Récupérer le projet
+### 1. Clone the repository
 
 ```sh
 git clone https://github.com/UrbanCS/video_builder_project.git
 cd video_builder_project
 ```
 
-### 2. Créer la configuration locale
+### 2. Create the local configuration
 
-Créer manuellement `server/config.php` avec cet exemple. Ce fichier est volontairement absent du dépôt et exclu par `.gitignore`.
+Manually create `server/config.php` using the example below. This file is intentionally absent from the repository and excluded by `.gitignore`.
 
 ```php
 <?php
@@ -55,102 +55,102 @@ const TITLE_FONT_FILE = __DIR__ . '/fonts/Satisfy-Regular.ttf';
 const FFMPEG_JOB_TIMEOUT_SECONDS = 300;
 ```
 
-`BASE_URL` est obligatoire et doit se terminer par `/`. Pour une installation dans un sous-dossier, inclure ce chemin, par exemple `https://example.com/video/`. Remplacer `MAIL_FROM` par une adresse autorisée par le service d'envoi avant de tester les courriels.
+`BASE_URL` is required and must end with `/`. For an installation in a subdirectory, include that path, for example `https://example.com/video/`. Replace `MAIL_FROM` with an address authorized by your email service before testing email delivery.
 
-Les autres constantes sont facultatives : inscriptions publiques désactivées par défaut, police Satisfy et délai de 300 secondes. `TITLE_FONT_FILE` permet d'utiliser explicitement la police fournie. Le délai s'applique à **chaque commande FFmpeg**, lorsque l'utilitaire Linux `timeout` est disponible; il n'est pas appliqué de cette manière sous Windows.
+The other constants are optional: public registration is disabled by default, the default font is Satisfy, and the default timeout is 300 seconds. `TITLE_FONT_FILE` explicitly selects the bundled font. The timeout applies to **each FFmpeg command** when the Linux `timeout` utility is available; it is not enforced this way on Windows.
 
-Les noms des exécutables `ffmpeg` et `ffprobe` sont définis dans `server/process_jobs.php`, et non dans cette configuration. Sous Windows, ajouter leur dossier au `PATH` utilisé par PHP.
+The `ffmpeg` and `ffprobe` executable names are defined in `server/process_jobs.php`, rather than in this configuration file. On Windows, add their directory to the `PATH` used by PHP.
 
-### 3. Lancer l'interface
+### 3. Start the web interface
 
-Depuis la racine du projet :
+From the project root:
 
 ```sh
 php -S 127.0.0.1:8000 -t .
 ```
 
-Ouvrir [l'application locale](http://127.0.0.1:8000/). Sur une installation sans comptes, le premier écran permet de créer le propriétaire. Créer ce compte avant d'ouvrir une installation à d'autres utilisateurs.
+Open the [local application](http://127.0.0.1:8000/). On an installation with no accounts, the first screen lets you create the owner account. Create this account before making the installation available to other users.
 
-Le serveur intégré PHP convient uniquement au développement local : il ne prend pas en compte les fichiers `.htaccess`. Garder l'écoute sur `127.0.0.1`.
+PHP's built-in server is for local development only and does not honor `.htaccess` files. Keep it bound to `127.0.0.1`.
 
-### 4. Générer une première vidéo
+### 4. Render your first video
 
-Ajouter quelques photos, choisir une musique et lancer la génération. Dans un second terminal, depuis la même racine :
+Add a few photos, select a music track, and submit the montage for rendering. In a second terminal, from the same project root:
 
 ```sh
 php server/process_jobs.php
 ```
 
-Le worker traite les tâches en attente, puis se termine. Relancer cette commande pour les nouveaux montages ou configurer une tâche planifiée. L'interface interroge le statut et affiche le lien du MP4 lorsque le rendu est terminé.
+The worker processes pending jobs, then exits. Run the command again for new montages or configure a scheduled task. The interface polls the job status and displays the MP4 link when rendering finishes.
 
-## Organisation du projet
+## Project structure
 
 ```text
 video_builder_project/
-├── index.php                   # Interface, connexion et historique
-├── assets/                     # Ressources visuelles de l'interface
+├── index.php                   # Interface, sign-in, and history
+├── assets/                     # Interface assets
 ├── server/
-│   ├── config.php              # À créer localement, jamais versionné
-│   ├── common.php              # Comptes, droits, fichiers et fonctions communes
-│   ├── auth.php                # Connexion, clients et réinitialisations
-│   ├── generate.php            # Réception des médias et création des tâches
-│   ├── process_jobs.php        # Worker de rendu FFmpeg
-│   ├── status.php              # Statut avec contrôle d'accès
-│   └── fonts/                  # Police des titres
-├── music/                      # Musiques MP3 proposées dans l'interface
-├── data/                       # Comptes et données privées, hors Git
-├── jobs/                       # Tâches, verrou et journaux, hors Git
-├── uploads/                    # Médias importés et fichiers de travail, hors Git
-├── outputs/                    # Vidéos générées, hors Git
-├── docs/CPANEL_SETUP.md         # Ancien guide d'hébergement
-└── SNAPSHOT_NOTES.md            # Provenance et exclusions de la copie initiale
+│   ├── config.php              # Created locally, never committed
+│   ├── common.php              # Accounts, permissions, files, and shared helpers
+│   ├── auth.php                # Sign-in, client accounts, and password resets
+│   ├── generate.php            # Media uploads and job creation
+│   ├── process_jobs.php        # FFmpeg rendering worker
+│   ├── status.php              # Job status with access checks
+│   └── fonts/                  # Title font
+├── music/                      # MP3 tracks available in the interface
+├── data/                       # Accounts and private data, excluded from Git
+├── jobs/                       # Jobs, lock, and logs, excluded from Git
+├── uploads/                    # Uploaded media and work files, excluded from Git
+├── outputs/                    # Generated videos, excluded from Git
+├── docs/CPANEL_SETUP.md         # Legacy hosting guide
+└── SNAPSHOT_NOTES.md            # Original snapshot source and exclusions
 ```
 
-**L'entrée web actuelle est `index.php` à la racine**, avec `server/`, `assets/` et `outputs/` accessibles sous la même URL de base. Les références à `public/index.php` dans l'ancien guide cPanel décrivent une arborescence antérieure.
+**The current web entry point is `index.php` at the project root**, with `server/`, `assets/`, and `outputs/` accessible under the same base URL. References to `public/index.php` in the legacy cPanel guide describe an older directory layout.
 
-## Limites actuelles
+## Current limits
 
-| Paramètre | Limite applicative |
+| Setting | Application limit |
 | --- | --- |
-| Médias par montage | 40 |
-| Formats importés | JPG, JPEG, PNG, MP4 |
-| Taille par photo | 30 Mio |
-| Taille par vidéo | 150 Mio |
-| Logo JPG/PNG | 5 Mio, réservé au propriétaire |
-| Durée d'une photo | 1 à 10 secondes, 3 par défaut |
-| Durée des pages titre | 2 à 10 secondes, avec 2 secondes supplémentaires à la fin |
-| Durée totale du montage | 600 secondes, titres compris |
-| Largeur des photos après optimisation | 1920 pixels maximum, proportions conservées, si GD est disponible |
+| Media files per montage | 40 |
+| Upload formats | JPG, JPEG, PNG, MP4 |
+| Photo file size | 30 MiB |
+| Video file size | 150 MiB |
+| JPG/PNG logo | 5 MiB, owner only |
+| Photo duration | 1–10 seconds, default 3 |
+| Title card duration | 2–10 seconds, with 2 extra seconds for the closing card |
+| Total montage duration | 600 seconds, including title cards |
+| Photo width after optimization | Up to 1920 pixels, preserving proportions, when GD is available |
 
-Ces limites se trouvent principalement dans `server/common.php`; certaines sont aussi reprises dans l'interface. Les limites PHP et celles du serveur web peuvent être plus basses. Ajuster notamment `upload_max_filesize`, `post_max_size`, `max_file_uploads`, `memory_limit` et les délais de réception selon les ressources disponibles. Prévoir un fichier supplémentaire dans `max_file_uploads` lorsqu'un logo accompagne les 40 médias.
+These limits are defined mainly in `server/common.php`; some are also repeated in the interface. PHP and web server limits may be lower. Adjust `upload_max_filesize`, `post_max_size`, `max_file_uploads`, `memory_limit`, and request timeouts to suit available resources. Allow one additional file in `max_file_uploads` when a logo accompanies 40 media files.
 
-## Hébergement et worker planifié
+## Hosting and scheduled rendering
 
-Déployer l'arborescence actuelle dans le dossier web dédié à l'application, créer sa configuration privée et autoriser les écritures nécessaires pour PHP et le worker. Sur un hébergement partagé, conserver les fichiers des autres sites hors du périmètre du déploiement.
+Deploy the current directory structure to the application's dedicated web directory, create its private configuration, and grant the write permissions required by PHP and the worker. On shared hosting, keep other websites' files outside the deployment scope.
 
-Exemple de crontab Linux pour lancer le worker chaque minute, à adapter avec les chemins réels :
+Example Linux crontab entry to run the worker every minute; replace the paths with those of your installation:
 
 ```cron
-* * * * * /usr/bin/php /chemin/absolu/video_builder_project/server/process_jobs.php >> /chemin/absolu/video_builder_project/jobs/worker.log 2>&1
+* * * * * /usr/bin/php /absolute/path/video_builder_project/server/process_jobs.php >> /absolute/path/video_builder_project/jobs/worker.log 2>&1
 ```
 
-Dans cPanel ou DirectAdmin, saisir la fréquence dans les champs de planification et uniquement la commande dans le champ prévu. Vérifier le `PATH` du cron et la version PHP CLI : ils peuvent différer de ceux de la session terminal ou du site web.
+In cPanel or DirectAdmin, enter the schedule in the scheduling fields and only the command in the command field. Check cron's `PATH` and the PHP CLI version: they may differ from those used by your terminal session or website.
 
-Un verrou `flock` sur `jobs/.process.lock` empêche les workers simultanés. La présence du fichier seule ne signifie pas qu'un worker est actif; ne pas le supprimer pendant un traitement.
+A `flock` lock on `jobs/.process.lock` prevents concurrent workers. The file's presence alone does not mean a worker is active; do not delete it while a job is running.
 
-## Confidentialité et exploitation
+## Privacy and operations
 
-Le dépôt contient le code et les ressources, **pas une sauvegarde complète de l'environnement de production**. La configuration, les comptes, les médias importés, les vidéos, les tâches, les logs et les sauvegardes sont exclus de Git. Les `.gitkeep` et certains `.htaccess` restent versionnés. Un `.gitignore` n'empêche ni l'accès HTTP aux fichiers, ni la publication d'un secret placé dans un fichier déjà suivi.
+The repository contains code and assets, **not a complete backup of the production environment**. Configuration, accounts, uploaded media, generated videos, jobs, logs, and backups are excluded from Git. The `.gitkeep` files and selected `.htaccess` files remain tracked. A `.gitignore` does not prevent HTTP access to files or the publication of a secret placed in an already tracked file.
 
-Avant une mise en ligne, refuser l'accès HTTP à `data/`, `jobs/` et `uploads/`, ainsi qu'aux configurations, sauvegardes et métadonnées Git. Des `.htaccess` sont fournis dans `jobs/` et `uploads/`; leur efficacité dépend de la configuration Apache. **Cette version ne fournit pas de protection `data/.htaccess`** : prévoir une règle serveur équivalente et vérifier son application. Les [notes de copie](SNAPSHOT_NOTES.md) consignent un problème d'accès observé lors de l'import du 15 août 2026; son état actuel n'est pas attesté par ce README.
+Before going live, deny HTTP access to `data/`, `jobs/`, and `uploads/`, as well as configuration files, backups, and Git metadata. `.htaccess` files are provided in `jobs/` and `uploads/`; their effectiveness depends on the Apache configuration. **This version does not include a protective `data/.htaccess` file**: configure an equivalent server rule and verify that it is enforced. The [snapshot notes](SNAPSHOT_NOTES.md) record an access issue observed during the August 15, 2026 import; this README does not attest to its current status.
 
-L'historique et l'endpoint de statut contrôlent les droits des comptes, mais les MP4 sont servis par des liens directs sous `outputs/`. Toute personne disposant d'un tel lien peut potentiellement télécharger la vidéo. Un téléchargement authentifié nécessite un mécanisme supplémentaire si la confidentialité l'exige.
+The history and status endpoint check account permissions, but MP4 files are served through direct links under `outputs/`. Anyone with such a link may be able to download the video. If privacy requirements call for authenticated downloads, an additional access mechanism is needed.
 
-Les brouillons peuvent conserver des médias sur l'appareil utilisé. Après un rendu réussi, le worker nettoie son dossier de travail, mais conserve les médias source et les données du projet; prévoir une politique de sauvegarde privée, de conservation et de nettoyage adaptée.
+Drafts may retain media on the user's device. After a successful render, the worker cleans up its working directory but keeps the source media and project data. Establish appropriate private backup, retention, and cleanup policies.
 
-## Vérifications et dépannage
+## Validation and troubleshooting
 
-Vérifier les exécutables et la syntaxe PHP avant déploiement :
+Check the executables and PHP syntax before deployment:
 
 ```sh
 php -v
@@ -164,17 +164,17 @@ php -l server/process_jobs.php
 php -l server/status.php
 ```
 
-La validation de syntaxe ne remplace pas un essai complet : créer un montage court avec photo, clip et titre, vérifier le téléchargement, puis tester séparément les droits propriétaire/client et les courriels. Aucune suite de tests automatisés n'est fournie dans cette version.
+Syntax checks do not replace an end-to-end test: create a short montage with a photo, clip, and title, verify the download, then separately test owner/client permissions and email delivery. This version does not include an automated test suite.
 
-| Symptôme | Vérification |
+| Symptom | What to check |
 | --- | --- |
-| Erreur au chargement de la page | Présence et syntaxe de `server/config.php`, version PHP, journal d'erreurs privé |
-| Tâche bloquée sur `pending` | Planification du worker, chemins PHP/FFmpeg, droits d'écriture et journal du cron |
-| Tâche bloquée sur `processing` | État du processus PHP/FFmpeg et journaux; les tâches interrompues ne sont pas automatiquement reprises |
-| Rendu en échec | Erreur du job, espace disque, codecs/filtres et durée totale |
-| Import refusé ou erreur 413 | Limites PHP, taille totale de la requête et limite du serveur web |
-| Titres absents ou mauvaise police | `TITLE_FONT_FILE`, accès à la police et filtres `drawtext`/`subtitles` |
-| Invitation ou réinitialisation non reçue | Configuration de `mail()`, expéditeur autorisé, journaux de messagerie et pourriels |
-| Lien de téléchargement incorrect | Valeur de `BASE_URL`, slash final et présence du MP4 dans `outputs/` |
+| Page fails to load | Presence and syntax of `server/config.php`, PHP version, and private error log |
+| Job stuck on `pending` | Worker schedule, PHP/FFmpeg paths, write permissions, and cron log |
+| Job stuck on `processing` | PHP/FFmpeg process status and logs; interrupted jobs are not automatically resumed |
+| Rendering fails | Job error, free disk space, codecs/filters, and total duration |
+| Upload rejected or HTTP 413 | PHP limits, total request size, and web server limit |
+| Missing titles or incorrect font | `TITLE_FONT_FILE`, font access, and `drawtext`/`subtitles` filters |
+| Invitation or reset email not received | `mail()` configuration, authorized sender, mail logs, and spam folder |
+| Incorrect download link | `BASE_URL`, trailing slash, and presence of the MP4 in `outputs/` |
 
-Les musiques, logos et polices doivent être utilisés dans le respect de leurs droits respectifs. Aucune licence générale de redistribution n'est définie dans ce dépôt.
+Music, logos, and fonts must be used in accordance with their respective rights. This repository does not define a general redistribution license.
