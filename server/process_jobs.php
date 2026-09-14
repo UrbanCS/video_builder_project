@@ -459,7 +459,7 @@ function makeTitlePart(
         FFMPEG_BIN,
         '-y',
     ];
-    $baseVideoFilter = 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080';
+    $baseVideoFilter = 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,fps=30,setsar=1';
     if ($backgroundPath !== '' && is_file($backgroundPath)) {
         $args[] = '-loop';
         $args[] = '1';
@@ -517,6 +517,15 @@ function makeTitlePart(
         $args[] = "{$baseVideoFilter}{$baseFilter}";
     }
 
+    // Match the media segments before concat: still-image inputs default to
+    // 25 fps / 12800 ticks, while media segments use 30 fps / 15360 ticks.
+    // Mixed time bases cause timestamp jumps and can discard the closing card.
+    $args[] = '-r';
+    $args[] = '30';
+    $args[] = '-video_track_timescale';
+    $args[] = '15360';
+    $args[] = '-t';
+    $args[] = (string) $duration;
     $args[] = '-threads';
     $args[] = '1';
     $args[] = '-c:v';

@@ -80,7 +80,21 @@ try {
     $orderKeys = array_map(static fn($v): string => (string) $v, $order);
 
     if (count($orderKeys) !== count($uploadKeys)) {
-        jsonResponse(['error' => 'Order count does not match uploaded files'], 400);
+        $expectedFiles = count($orderKeys);
+        $receivedFiles = count($uploadKeys);
+        $phpFileLimit = (int) ini_get('max_file_uploads');
+        if ($expectedFiles > $receivedFiles && $phpFileLimit > 0 && $receivedFiles >= $phpFileLimit) {
+            jsonResponse(['error' => sprintf(
+                'Le serveur a reçu seulement %d fichiers sur %d. Sa limite d’envoi doit être augmentée pour accepter les 40 médias annoncés. Votre sélection est conservée; veuillez prévenir l’administrateur.',
+                $receivedFiles,
+                $expectedFiles
+            )], 400);
+        }
+        jsonResponse(['error' => sprintf(
+            'Envoi incomplet : %d fichiers reçus sur %d attendus. Votre sélection est conservée; veuillez réessayer.',
+            $receivedFiles,
+            $expectedFiles
+        )], 400);
     }
 
     $uniqueOrderKeys = array_unique($orderKeys);
@@ -101,7 +115,11 @@ try {
 
     if (!isOwner($currentUser)) {
         $profile = currentUserProfile($currentUser);
-        $homageFrom = resolveHomageFrom($profile);
+        // Clients can customize the dedication for this montage. Older callers
+        // that omit the field still inherit the value from their profile.
+        if (!array_key_exists('homage_from', $_POST)) {
+            $homageFrom = resolveHomageFrom($profile);
+        }
         $clientFirstName = sanitizeTitleText((string) ($profile['client_first_name'] ?? ''), 80);
         $clientLastName = sanitizeTitleText((string) ($profile['client_last_name'] ?? ''), 80);
         $tributeName = sanitizeTitleText((string) ($profile['tribute_name'] ?? ''), 120);

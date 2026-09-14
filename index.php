@@ -562,7 +562,7 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
       <div class="grid" style="margin-top: 0;">
         <div>
           <label for="homageFrom">Hommage de la part de</label>
-          <input id="homageFrom" type="text" maxlength="120" placeholder="Ex: Famille Dupont" value="<?= htmlspecialchars(resolveHomageFrom($currentUserProfile), ENT_QUOTES, 'UTF-8') ?>" <?= $isOwnerUser ? '' : 'readonly' ?>>
+          <input id="homageFrom" type="text" maxlength="120" placeholder="Ex: Famille Dupont" value="<?= htmlspecialchars(resolveHomageFrom($currentUserProfile), ENT_QUOTES, 'UTF-8') ?>">
         </div>
         <div></div>
       </div>
@@ -897,10 +897,10 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
       outroTitleInput.value = String(payload.outro_title || '');
     }
 
+    if (homageFromInput && payload.homage_from !== undefined) {
+      homageFromInput.value = String(payload.homage_from || '');
+    }
     if (IS_OWNER) {
-      if (homageFromInput && payload.homage_from !== undefined) {
-        homageFromInput.value = String(payload.homage_from || '');
-      }
       if (tributeNameInput && payload.tribute_name !== undefined) {
         tributeNameInput.value = String(payload.tribute_name || '');
       }
