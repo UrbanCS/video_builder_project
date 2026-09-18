@@ -13,7 +13,8 @@ const USERS_FILE = DATA_DIR . '/users.json';
 const BACKGROUNDS_DIR = ROOT_DIR . '/public/backgrounds';
 const BACKGROUNDS_DIR_ALT = ROOT_DIR . '/backgrounds';
 
-const MAX_FILES = 40;
+const MAX_FILES = 100;
+const MAX_TOTAL_UPLOAD_SIZE = 1024 * 1024 * 1024; // 1 GiB per montage, across requests.
 const MAX_TOTAL_DURATION = 600;
 const DEFAULT_IMAGE_DURATION = 3;
 const MAX_IMAGE_DURATION = 10;

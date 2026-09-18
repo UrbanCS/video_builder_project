@@ -3,8 +3,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/server/common.php';
 $musicFiles = listMusicFiles();
-$postMaxBytes = iniSizeToBytes((string) ini_get('post_max_size'));
-$maxTotalUploadBytes = $postMaxBytes > 0 ? (int) floor($postMaxBytes * 0.9) : (38 * 1024 * 1024);
+$maxTotalUploadBytes = MAX_TOTAL_UPLOAD_SIZE;
 ensureSession();
 $currentUser = currentUser();
 $currentUserProfile = currentUserProfile($currentUser);
@@ -492,7 +491,7 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
 
     <section class="panel">
       <h1>Générateur de vidéo MP4</h1>
-      <p class="muted">Formats autorisés: JPG, PNG, MP4. Max 40 fichiers. Image max: 30 MB. Vidéo max: 150 MB. Durée totale max: 600 sec. Les grandes photos sont réduites automatiquement à 1920 px de large pour accélérer le rendu.</p>
+      <p class="muted">Formats autorisés: JPG, PNG, MP4. Max <?= MAX_FILES ?> fichiers. Image max: 30 MB. Vidéo max: 150 MB. Total des fichiers max: 1 Go. Durée totale max: 600 sec. L’envoi se fait fichier par fichier. Les grandes photos sont réduites automatiquement à 1920 px de large pour accélérer le rendu.</p>
 
       <div class="dropzone" id="dropzone">
         <label for="mediaInput">Ajouter images/vidéos</label>
@@ -612,7 +611,7 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
 <?php if ($currentUser !== null): ?>
 <script>
 (() => {
-  const MAX_FILES = 40;
+  const MAX_FILES = <?= MAX_FILES ?>;
   const MAX_IMAGE_SIZE = 30 * 1024 * 1024;
   const MAX_VIDEO_SIZE = 150 * 1024 * 1024;
   const MAX_LOGO_SIZE = 5 * 1024 * 1024;
@@ -944,6 +943,7 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', url, true);
+      xhr.setRequestHeader('X-Video-Upload', '1');
 
       xhr.upload.onprogress = (e) => {
         if (!e.lengthComputable) {
@@ -961,6 +961,8 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
         });
       };
       xhr.onerror = () => reject(new Error('Erreur réseau pendant l’upload'));
+      xhr.timeout = 300000;
+      xhr.ontimeout = () => reject(new Error('Délai d’envoi dépassé. Votre sélection est conservée.'));
       xhr.send(formData);
     });
   }
@@ -1139,6 +1141,13 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
       setStatus('Durée page titre invalide (2 à 10).', true);
       return;
     }
+    const knownDuration = mediaState.filter(item => item.type === 'image').length * imageDuration
+      + ((introTitleInput.value.trim() || tributeNameInput.value.trim()) ? titleDuration : 0)
+      + (outroTitleInput.value.trim() ? titleDuration + 2 : 0);
+    if (knownDuration > 600) {
+      setStatus('Le montage dépasse 10 minutes. Réduisez la durée des photos ou leur nombre.', true);
+      return;
+    }
     if (logoInput && logoInput.files && logoInput.files.length > 0 && logoInput.files[0].size > MAX_LOGO_SIZE) {
       setStatus('Logo trop volumineux (max 5 MB).', true);
       return;
@@ -1160,12 +1169,9 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
 
     try {
       const formData = new FormData();
-      const order = [];
-
-      mediaState.forEach(item => {
-        formData.append(`files[${item.id}]`, item.file, item.file.name);
-        order.push(item.id);
-      });
+      // Snapshot the selection/options so edits during upload cannot change the job.
+      const selectedMedia = mediaState.slice();
+      const order = selectedMedia.map(item => item.id);
 
       formData.append('order_json', JSON.stringify(order));
       formData.append('image_duration', String(imageDuration));
@@ -1183,7 +1189,32 @@ $recentJobs = $currentUser !== null ? listJobsForUser($currentUser, 25) : [];
         formData.append('logo', logoInput.files[0], logoInput.files[0].name);
       }
 
-      const resp = await postWithProgress(GENERATE_ENDPOINT, formData, (p) => setUploadProgress(p));
+      const startData = new FormData();
+      startData.append('action', 'start');
+      const startResponse = await postWithProgress('server/upload.php', startData, () => {});
+      const started = JSON.parse(startResponse.text);
+      if (!startResponse.ok || !started.upload_token) {
+        throw new Error(started.error || 'Impossible de préparer l’envoi.');
+      }
+      const totalBytes = Math.max(1, totalUploadSize(selectedMedia));
+      let sentBytes = 0;
+      for (const [index, item] of selectedMedia.entries()) {
+        setStatus(`Envoi du fichier ${index + 1} sur ${selectedMedia.length}…`);
+        const batch = new FormData();
+        batch.append('upload_token', started.upload_token);
+        batch.append('file_id', item.id);
+        batch.append(`files[${item.id}]`, item.file, item.file.name);
+        const uploaded = await postWithProgress('server/upload.php', batch,
+          p => setUploadProgress(95 * (sentBytes + item.file.size * p / 100) / totalBytes));
+        const receipt = JSON.parse(uploaded.text);
+        if (!uploaded.ok || !receipt.ok) {
+          throw new Error(receipt.error || `Échec de l’envoi du fichier ${index + 1}.`);
+        }
+        sentBytes += item.file.size;
+      }
+      formData.append('upload_token', started.upload_token);
+      setStatus('Tous les fichiers sont reçus. Préparation du montage…');
+      const resp = await postWithProgress(GENERATE_ENDPOINT, formData, p => setUploadProgress(95 + p * 0.05));
       setUploadProgress(100);
       uploadProgressText.textContent = 'Upload terminé. Traitement en cours...';
 

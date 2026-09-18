@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require __DIR__ . '/common.php';
+require __DIR__ . '/upload_sessions.php';
 
 try {
     ensureSession();
@@ -30,7 +30,31 @@ try {
     ensureDir(UPLOADS_DIR);
     ensureDir(JOBS_DIR);
 
-    $filesById = normalizeUploadedFiles('files');
+    $batchDir = '';
+    $batchHandle = null;
+    $batchState = null;
+    $batchToken = (string) ($_POST['upload_token'] ?? '');
+    if ($batchToken !== '') {
+        requireUploadHeader();
+        [$batchDir, $batchHandle, $batchState] = openUploadSession($batchToken, (string) $currentUser['id']);
+        $existingPath = getJobPath((string) $batchState['project_id']);
+        // Retrying finalization after a lost response must not enqueue twice.
+        if (is_file($existingPath)) {
+            $existing = readJob((string) $batchState['project_id']);
+            if (($existing['user_id'] ?? '') !== (string) $currentUser['id']) {
+                jsonResponse(['error' => 'Not authorized'], 403);
+            }
+            jsonResponse(['ok' => true, 'job_id' => $existing['project_id'], 'status' => $existing['status']]);
+        }
+        $filesById = [];
+        foreach ($batchState['files'] as $id => $file) {
+            $filesById[$id] = ['name' => $file['name'], 'size' => $file['size'],
+                'tmp_name' => $batchDir . '/' . basename($file['stored']), 'error' => UPLOAD_ERR_OK];
+        }
+    } else {
+        // Backward compatibility for pages left open before the deployment.
+        $filesById = normalizeUploadedFiles('files');
+    }
     if (count($filesById) === 0) {
         jsonResponse(['error' => 'No files uploaded'], 400);
     }
@@ -85,7 +109,7 @@ try {
         $phpFileLimit = (int) ini_get('max_file_uploads');
         if ($expectedFiles > $receivedFiles && $phpFileLimit > 0 && $receivedFiles >= $phpFileLimit) {
             jsonResponse(['error' => sprintf(
-                'Le serveur a reçu seulement %d fichiers sur %d. Sa limite d’envoi doit être augmentée pour accepter les 40 médias annoncés. Votre sélection est conservée; veuillez prévenir l’administrateur.',
+                'Le serveur a reçu seulement %d fichiers sur %d. Rechargez la page pour utiliser le nouvel envoi fichier par fichier. Conservez vos fichiers originaux pour les sélectionner à nouveau si nécessaire.',
                 $receivedFiles,
                 $expectedFiles
             )], 400);
@@ -108,7 +132,11 @@ try {
         }
     }
 
-    $projectId = generateId(8);
+    if (array_sum(array_column($filesById, 'size')) > MAX_TOTAL_UPLOAD_SIZE) {
+        jsonResponse(['error' => 'Taille totale trop élevée (1 Go maximum par montage).'], 413);
+    }
+
+    $projectId = $batchState !== null ? (string) $batchState['project_id'] : generateId(8);
     $projectDir = UPLOADS_DIR . '/' . $projectId;
     ensureDir($projectDir);
     $logoStoredName = '';
@@ -127,6 +155,15 @@ try {
         if (isset($_FILES['logo']) && (int) ($_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
             jsonResponse(['error' => 'Logo réservé au compte administrateur'], 403);
         }
+    }
+
+    $photoCount = count(array_filter($filesById, static fn(array $f): bool =>
+        detectMediaType(strtolower((string) pathinfo($f['name'], PATHINFO_EXTENSION))) === 'image'));
+    $knownDuration = $photoCount * $imageDuration
+        + (($introTitle !== '' || $tributeName !== '') ? $titleDuration : 0)
+        + ($outroTitle !== '' ? $titleDuration + 2 : 0);
+    if ($knownDuration > MAX_TOTAL_DURATION) {
+        jsonResponse(['error' => 'Le montage dépasse 10 minutes. Réduisez la durée des photos ou leur nombre.'], 400);
     }
 
     if (isset($_FILES['logo']) && is_array($_FILES['logo']) && (int) ($_FILES['logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
@@ -172,7 +209,10 @@ try {
         $storedName = generateId(16) . '.' . $extension;
         $targetPath = $projectDir . '/' . $storedName;
 
-        if (!move_uploaded_file((string) $file['tmp_name'], $targetPath)) {
+        $saved = $batchDir !== ''
+            ? copy((string) $file['tmp_name'], $targetPath)
+            : move_uploaded_file((string) $file['tmp_name'], $targetPath);
+        if (!$saved) {
             throw new RuntimeException('Failed to save uploaded file');
         }
 
@@ -228,7 +268,19 @@ try {
         throw new RuntimeException('Failed to write project job.json');
     }
 
-    writeJob($job);
+    // Publish the complete JSON atomically so cron cannot read a partial job.
+    $queueTemp = JOBS_DIR . '/' . $projectId . '.pending';
+    if (file_put_contents($queueTemp, $projectJobJson, LOCK_EX) === false
+        || !rename($queueTemp, getJobPath($projectId))) {
+        throw new RuntimeException('Failed to publish job');
+    }
+
+    if ($batchState !== null) {
+        // Keep the small manifest for idempotent retries, but not duplicate media.
+        foreach ($batchState['files'] as $file) {
+            @unlink($batchDir . '/' . basename($file['stored']));
+        }
+    }
 
     jsonResponse([
         'ok' => true,
